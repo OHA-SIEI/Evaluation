@@ -4,6 +4,9 @@ library(readxl)
 library(dplyr)
 library(lubridate)
 library(data.table)
+library(tidyverse)
+library(fastDummies)
+
 
 file <- 'Download Your Data_Full Data_data-Burundi8-31-22.csv' #downloaded from 
   #'sims_asmt_burundi_question_data_v2.csv' #Question-level data provided by Isaiah L. 
@@ -22,24 +25,38 @@ Bur_SIMS$DateAssessment <- as.Date(Bur_SIMS$Assessment.Date, format= "%m/%d/20%y
 #Bur_SIMS$ASSESSMENT_YEAR <- substr(Bur_SIMS$ASSESSMENT_QUARTER, 1, 4)
 Bur_SIMS$AssessmentFY <- substr(Bur_SIMS$Assessment.Quarter, 1, 4)
 
+#Bur_SIMS <- Bur_SIMS[order(DateAssessment)]
+
 ##This was the first date these sites were visited. 
-Bur_SIMS_first <- setDT(Bur_SIMS)[order(DateAssessment), head(.SD, 1L), by = "orgUnituid"]
-Bur_SIMS_first <- select(Bur_SIMS_first, c('orgUnituid', 'DateAssessment'))
-Bur_SIMS_first$AssessmentStatus <- "Initial Assessment" 
+Bur_SIMS_visits  <- Bur_SIMS %>% select("orgUnituid", "ï..Assessment.ID", "DateAssessment") %>% distinct
+Bur_SIMS_visits <- Bur_SIMS_visits %>%
+    group_by(orgUnituid) %>%
+     mutate(Ordervisit = order(order(ï..Assessment.ID, decreasing=FALSE))) %>%
+  mutate(Ordervisitlast = order(order(ï..Assessment.ID, decreasing=TRUE)))
 
-Bur_SIMS2 <- merge(x=Bur_SIMS, y=Bur_SIMS_first, by=c("orgUnituid", "DateAssessment"), all.x=TRUE)
+Bur_SIMS_visits = subset(Bur_SIMS_visits, select = -c(DateAssessment))
+Bur_SIMS_1 <- merge(x=Bur_SIMS, y=Bur_SIMS_visits, by=c("orgUnituid", "ï..Assessment.ID"), all.x=TRUE)
 
-##Now, make an indicator for the LAST visit. (this might be the same as the first visit)
-Bur_SIMS_last <-unique(Bur_SIMS[order(DateAssessment)], by= "orgUnituid", fromLast=TRUE)
-Bur_SIMS_last <- select(Bur_SIMS_last, c( "orgUnituid", 'DateAssessment'))
-Bur_SIMS_last$AssessmentStatus1 <- "Last Assessment" ##This was the last date these sites were visited. 
-
-Bur_SIMS_1 <- merge(x=Bur_SIMS2, y=Bur_SIMS_last, by=c("orgUnituid", "DateAssessment"), all.x=TRUE)
+##This was the first date these sites were visited. 
+Bur_SIMS_1$AssessmentStatus[Bur_SIMS_1$Ordervisit == 1] <- "Initial Assessment" 
+# Bur_SIMS_first <- setDT(Bur_SIMS)[order(DateAssessment), head(.SD, 1L), by = "orgUnituid"]
+# Bur_SIMS_first <- select(Bur_SIMS_first, c('orgUnituid', 'DateAssessment'))
+# Bur_SIMS_first$AssessmentStatus <- "Initial Assessment" 
+# 
+# Bur_SIMS2 <- merge(x=Bur_SIMS, y=Bur_SIMS_first, by=c("orgUnituid", "DateAssessment"), all.x=TRUE)
+# 
+# ##Now, make an indicator for the LAST visit. (this might be the same as the first visit)
+Bur_SIMS_1$AssessmentStatus1[Bur_SIMS_1$Ordervisitlast == 1] <- "Last Assessment" 
+# Bur_SIMS_last <-unique(Bur_SIMS[order(DateAssessment)], by= "orgUnituid", fromLast=TRUE)
+# Bur_SIMS_last <- select(Bur_SIMS_last, c( "orgUnituid", 'DateAssessment'))
+# Bur_SIMS_last$AssessmentStatus1 <- "Last Assessment" ##This was the last date these sites were visited.
+# 
+# Bur_SIMS_1 <- merge(x=Bur_SIMS2, y=Bur_SIMS_last, by=c("orgUnituid", "DateAssessment"), all.x=TRUE)
 
 ##number of assessments 
  Bur_SIMSnumbervisits <- Bur_SIMS_1 %>%
    group_by(orgUnituid) %>%
-  summarise(Numberofvisits = n_distinct(DateAssessment))
+  summarise(Numberofvisits = n_distinct("ï..Assessment.ID"))
  
 # Bur_SIMSnumbervisits <-  Bur_SIMSnumbervisits  %>% rename(NumberofVisits =  "n_distinct(DateAssessment)", orgUnituid = "\"orgUnituid\"")
  
@@ -56,10 +73,7 @@ Bur_SIMS1$AssessmentStatus[Bur_SIMS1$AssessmentStatus == "Follow-up assessment" 
 Bur_SIMS1$AssessmentStatus[Bur_SIMS1$AssessmentStatus == "Follow-up/last assessment" & 
                              (Bur_SIMS1$SCORE == "Red" | Bur_SIMS1$SCORE == "Yellow")] <- "Last assessment/Need to return"
 
-Bur_SIMSmain1$RepeatedCEEs <- duplicated(Bur_SIMSmain1[,c('orgUnituid', 'CEE.Number')])
-
-#Bur_SIMSmain <- Bur_SIMS1 %>%  dplyr::filter(duplicated(Bur_SIMS1[,c("ASSESSMENT_DATE", "LOWEST_OU_UID", "CEE_LONG_ID")]) == ("FALSE")) #This is to get a single score from that date (use with the sco-re-level dataset)
-
+#Bur_SIMSmain1$RepeatedCEEs <- duplicated(Bur_SIMSmain1[,c('orgUnituid', 'CEE.Number')])
 Bur_SIMSmain <- Bur_SIMS1
 ####Number of scores per site and date
 Bur_SIMSmain$n <- 1
@@ -72,29 +86,81 @@ Bur_SIMSmainnumberscores <- Bur_SIMSmainnumberscores %>% rename("orgUnituid" = G
 
 Bur_SIMSmain1 <- merge(x=Bur_SIMSmain, y=Bur_SIMSmainnumberscores, by=c("orgUnituid", "DateAssessment"), all.x=TRUE)
 
-Bur_SIMSmain1$MorethanoneCEEassessment[Bur_SIMSmain1$NumberofVisits >= 2] <- 1  
+Bur_SIMSmain1 <- Bur_SIMSmain1 %>%   group_by(orgUnituid, CEE.Number) %>%   mutate(RepeatedCEEs = n())  #>1 To provide T/F. 2/3 are duplicated
 
-Bur_SIMSmain1 <- Bur_SIMSmain1 %>% mutate(AssessmentWasRechecked = ifelse(((Numberofvisits == 2 & 
-                                  AssessmentStatus == "Initial/Need to return") | (Numberofvisits >= 3 & 
-                                    AssessmentStatus == "Follow-up/Need to return")), 1, 0)) #if NumberofVisits == 2 and AssessmentStatus == "Initial/Need to return" then we can technically "delete" this since these should have been checked again in the second visit  # if NumberofVisits >= 3 and AssessmentStatus == "Follow-up/Need to return" then we can technically "delete" this since these should have been checked again in the third visit
+Bur_SIMSmain1$MorethanoneCEEassessment <- as.integer("")
+Bur_SIMSmain1$MorethanoneCEEassessment[Bur_SIMSmain1$Numberofvisits >= 2] <- 1
 
 Bur_SIMSmain1 <- Bur_SIMSmain1 %>% mutate(FinalAssessmentStatus = case_when(AssessmentStatus == "Initial Assessment" &
-                                      is.na(AssessmentStatus1) == TRUE ~ "Initial assessment",
-                                    AssessmentStatus == "Initial Assessment" &  AssessmentStatus1 == "Last Assessment" ~ 
-                                      "Initial (and only) assessment",
-                                    AssessmentStatus == "Follow-up assessment" &  is.na(AssessmentStatus1) == TRUE ~ 
-                                      "Follow-up assessment", 
-                                    AssessmentStatus == "Follow-up assessment" &  AssessmentStatus1 == "Last Assessment" ~ 
-                                      "Follow-up (and last) assessment",
-                                    AssessmentStatus == "Follow-up/last assessment" ~ "Follow-up (and last) assessment"
-                                    )) ## this status could help us eventually determine Which CEEs can be "deleted" since they should have been rechecked in follow-ups. 
+                                                                              is.na(AssessmentStatus1) == TRUE ~ "Initial assessment",
+                                                                            AssessmentStatus == "Initial Assessment" &  AssessmentStatus1 == "Last Assessment" ~ 
+                                                                              "Initial (and only) assessment",
+                                                                            AssessmentStatus == "Follow-up assessment" &  is.na(AssessmentStatus1) == TRUE ~ 
+                                                                              "Follow-up assessment", 
+                                                                            AssessmentStatus == "Follow-up assessment" &  AssessmentStatus1 == "Last Assessment" ~ 
+                                                                              "Follow-up (and last) assessment",
+                                                                            AssessmentStatus == "Follow-up/last assessment" ~ "Follow-up (and last) assessment"
+)) ## this status could help us eventually determine Which CEEs can be "deleted" since they should have been rechecked in follow-ups. 
 #create a duplicate for CEE.Number and orgUnituid. Essentially, we could have one group of core scores from a orgUnituid. If there is no dup then keep that score.
 #If there are two dups then "delete" the one from the initial assessment. #if there are three dups then keep the one from the final
 #If it is the initial and only assessment nothing will be deleted.
 
+Bur_SIMSmain1 <- Bur_SIMSmain1 %>% mutate(NumericalScore = case_when(Score == "Green"  ~ 3,
+                                                                     Score == "Yellow"  ~ 2,
+                                                                     Score == "Red"  ~ 1)) 
+
+#####put in indicators for "Improved in next assessment" and "Declined in next assessment"
+Bur_SIMSfilteredtodups <- subset(filter(Bur_SIMSmain1, RepeatedCEEs >= 2), select = c(orgUnituid, CEE.Number, NumericalScore, Ordervisit))
+RSBur_SIMSfilteredtodups <-  
+  tidyr::pivot_wider(Bur_SIMSfilteredtodups, names_from = Ordervisit, values_from = NumericalScore, values_fn = list) %>% 
+  unnest(cols = everything() )
+
+# cols.num <- c( "Initial assessment", "Follow-up (and last) assessment", "Follow-up assessment")
+# ####COME BACK TO THIS!
+# # RSBur_SIMSfilteredtodups[cols.num][is.na(RSBur_SIMSfilteredtodups[cols.num]==TRUE)] <- "0"
+# RSBur_SIMSfilteredtodups$`Initial assessment` = unlist(RSBur_SIMSfilteredtodups$`Initial assessment`,  use.names = TRUE)
+# RSBur_SIMSfilteredtodups[cols.num] <- sapply(unlist(RSBur_SIMSfilteredtodups[cols.num]))
+#  RSBur_SIMSfilteredtodups2[cols.num] <- sapply(RSBur_SIMSfilteredtodups[cols.num],as.numeric)
+# 
+  RSBur_SIMSfilteredtodups$ChangeinCEE <- is.numeric("")
+#  RSBur_SIMSfilteredtodups$ChangeinCEENumerical <- is.numeric("")
+  RSBur_SIMSfilteredtodups$ChangeinCEENumerical <- (RSBur_SIMSfilteredtodups$"4" - RSBur_SIMSfilteredtodups$"1")
+  RSBur_SIMSfilteredtodups$ChangeinCEENumerical2 <- (RSBur_SIMSfilteredtodups$"3" - RSBur_SIMSfilteredtodups$"1")
+  RSBur_SIMSfilteredtodups$ChangeinCEENumerical3 <- (RSBur_SIMSfilteredtodups$"2" - RSBur_SIMSfilteredtodups$"1")
+  RSBur_SIMSfilteredtodups$ChangeinCEENumerical3a <- (RSBur_SIMSfilteredtodups$"3" - RSBur_SIMSfilteredtodups$"2")
+        
+    RSBur_SIMSfilteredtodups$ChangeinCEENumerical[which(is.na(RSBur_SIMSfilteredtodups$ChangeinCEENumerical) == TRUE)] <- RSBur_SIMSfilteredtodups$ChangeinCEENumerical2[which(is.na(RSBur_SIMSfilteredtodups$ChangeinCEENumerical) == TRUE)]
+    RSBur_SIMSfilteredtodups$ChangeinCEENumerical[which(is.na(RSBur_SIMSfilteredtodups$ChangeinCEENumerical) == TRUE)] <- RSBur_SIMSfilteredtodups$ChangeinCEENumerical3[which(is.na(RSBur_SIMSfilteredtodups$ChangeinCEENumerical) == TRUE)]
+    RSBur_SIMSfilteredtodups$ChangeinCEENumerical[which(is.na(RSBur_SIMSfilteredtodups$ChangeinCEENumerical) == TRUE)] <- RSBur_SIMSfilteredtodups$ChangeinCEENumerical3a[which(is.na(RSBur_SIMSfilteredtodups$ChangeinCEENumerical) == TRUE)]
+  
+    RSBur_SIMSfilteredtodups$ChangeinCEE[which(RSBur_SIMSfilteredtodups$ChangeinCEENumerical > 0)] <- "Improved"
+    RSBur_SIMSfilteredtodups$ChangeinCEE[which(RSBur_SIMSfilteredtodups$ChangeinCEENumerical == 0)] <- "No.change"
+    RSBur_SIMSfilteredtodups$ChangeinCEE[which(RSBur_SIMSfilteredtodups$ChangeinCEENumerical == 0 & RSBur_SIMSfilteredtodups$"1" == 3)] <- "No.change/no.need.for.change.from.green"
+    RSBur_SIMSfilteredtodups$ChangeinCEE[which(RSBur_SIMSfilteredtodups$ChangeinCEENumerical == 0 & RSBur_SIMSfilteredtodups$"3" == 3 & 
+                                                 RSBur_SIMSfilteredtodups$"2" == 3 & is.na(RSBur_SIMSfilteredtodups$"1"))] <-      "No.change/no.need.for.change.from.green"
+    RSBur_SIMSfilteredtodups$ChangeinCEE[which(RSBur_SIMSfilteredtodups$ChangeinCEENumerical < 0)] <- "Declined"
+    
+    
+    Bur_SIMSmainwithchange <- merge(x=Bur_SIMSmain1, y=RSBur_SIMSfilteredtodups[,c("orgUnituid", "CEE.Number", "ChangeinCEE")],
+                                    by=c("orgUnituid", "CEE.Number"), all.x=TRUE)
+    
+    Bur_SIMSmainwithchange$ChangeinCEE[which(is.na(Bur_SIMSmainwithchange$ChangeinCEE))] <- "Not.re-assessed"
+    
+    Bur_SIMSmainwithchange <- fastDummies::dummy_cols(Bur_SIMSmainwithchange, select_columns = c("ChangeinCEE")) 
+    
+        Bur_SIMSmain1 <-Bur_SIMSmainwithchange
+    
+    
+ Bur_SIMSmain1 <- Bur_SIMSmain1 %>% mutate(AssessmentWasRechecked = ifelse(((Numberofvisits == 2 & 
+                                                                               AssessmentStatus == "Initial/Need to return") | (Numberofvisits >= 3 & 
+                                                                        AssessmentStatus == "Follow-up/Need to return")), 1, 0)) #if NumberofVisits == 2 and AssessmentStatus == "Initial/Need to return" then we can technically "delete" this since these should have been checked again in the second visit  # if NumberofVisits >= 3 and AssessmentStatus == "Follow-up/Need to return" then we can technically "delete" this since these should have been checked again in the third visit
+ 
+
+#Bur_SIMSmain <- Bur_SIMS1 %>%  dplyr::filter(duplicated(Bur_SIMS1[,c("ASSESSMENT_DATE", "LOWEST_OU_UID", "CEE_LONG_ID")]) == ("FALSE")) #This is to get a single score from that date (use with the sco-re-level dataset)
+
+
 #Bur_SIMSmain1 <- Bur_SIMSmain1 %>% group_by("orgUnituid", "CEE.Number") %>% mutate(duplicate=seq(n()))
 #Bur_SIMSmain1$RepeatedCEEs <- duplicated(Bur_SIMSmain1[,c('orgUnituid', 'CEE.Number')])
-Bur_SIMSmain1 <- Bur_SIMSmain1 %>%   group_by(orgUnituid, CEE.Number) %>%   mutate(RepeatedCEEs = n()) #>1 To provide T/F. 2/3 are duplicated
 
 #ID required versus non-required
 conditionsite <- Bur_SIMSmain1$CEE.Number %in% c("1.02", "1.07", "1.08", "1.1", "1.11", "1.21", "1.22", "2.01", "2.02", "2.03", "2.05", "2.07", "2.08", "2.1", "2.18", "2.19", "2.22", 
@@ -128,33 +194,44 @@ Bur_SIMSmain1 <- Bur_SIMSmain1 %>%  mutate(SiteLevelFullScores =
                             (RepeatedCEEs >= 2 & FinalAssessmentStatus == "Follow-up (and last) assessment"), 1, 0))
    ## this status could help us eventually determine Which CEEs can be "deleted" since they have been re-scored in follow-ups. 
 
-Bur_SIMSmain1 <- Bur_SIMSmain1 %>% mutate(NumericalScore = case_when(Score == "Green"  ~ 3,
-                                                                     Score == "Yellow"  ~ 2,
-                                                                     Score == "Red"  ~ 1)) 
+
 
 cols.num <- c("Score.for.Green", "Score.for.Red", "Score.for.Red...Yellow", "Score.for.Yellow")
 Bur_SIMSmain1[cols.num][Bur_SIMSmain1[cols.num]!=""] <- "1"
 Bur_SIMSmain1[cols.num][Bur_SIMSmain1[cols.num]==""] <- "0"
 Bur_SIMSmain1[cols.num] <- sapply(Bur_SIMSmain1[cols.num],as.numeric)
 
-SiteLevelFullScores <- dplyr::filter(Bur_SIMSmain1, SiteLevelFullScores == 1)
+SiteLevelFullScores <- dplyr::filter(Bur_SIMSmain1, SiteLevelFullScores == 1) ####This is the "complete" scores from a site, removing CEEs that were late rescored
 
 fwrite(SiteLevelFullScores, file=paste("sitelevelfullscores", ".csv"))
 
-#####Looking at scores at the site-level (i.e. scores per site) #####
+#####Looking at scores at the site-level (i.e. aggregating scores per site) #####
 Bur_SIMSmain1$Green <- 3
 
+Bur_SIMSassessmentsite <- data.frame(aggregate(list(TotalScores =  Bur_SIMSmain1$NumericalScore,
+                                         Total = Bur_SIMSmain1$Green, Count = Bur_SIMSmain1$X1), by=list(orgUnituid = Bur_SIMSmain1$orgUnituid,
+            AssessmentID = Bur_SIMSmain1$"ï..Assessment.ID"), FUN = sum)) ###aggregate by assessment ID, site
+
+
 Bur_SIMSall <- data.frame(aggregate(list(TotalScores =  Bur_SIMSmain1$NumericalScore,
-                                           Total = Bur_SIMSmain1$Green, Count = Bur_SIMSmain1$X1), by=list(orgUnituid = Bur_SIMSmain1$orgUnituid), FUN = sum))
+                                           Total = Bur_SIMSmain1$Green, TotalDeclined = Bur_SIMSmain1$ChangeinCEE_Declined,
+                                         TotalNotReassessed =  Bur_SIMSmain1$"ChangeinCEE_Not.re-assessed", 
+                                         TotalGreenBefore =  Bur_SIMSmain1$"ChangeinCEE_No.change/no.need.for.change.from.green", Count = Bur_SIMSmain1$X1), 
+                                    by=list(orgUnituid = Bur_SIMSmain1$orgUnituid), FUN = sum))
 
 Bur_SIMSwithoutdups <- data.frame(aggregate(list(TotalScoresnodups =  SiteLevelFullScores$NumericalScore,
-                                         Totalnodups = SiteLevelFullScores$Green, 
+                                         Totalnodups = SiteLevelFullScores$Green, TotalDeclinednodups = SiteLevelFullScores$ChangeinCEE_Declined,
+                                         TotalNotReassessednodups =  SiteLevelFullScores$"ChangeinCEE_Not.re-assessed", 
+                                         TotalGreenBeforenodups =  SiteLevelFullScores$"ChangeinCEE_No.change/no.need.for.change.from.green",
                                          Countnodups = SiteLevelFullScores$X1), by=list(orgUnituid = 
                                            SiteLevelFullScores$orgUnituid), FUN = sum))
 
 
 Bur_SIMSRequiredandwithoutdups <- data.frame(aggregate(list(TotalScoresReqnodups =  dplyr::filter(Bur_SIMSmain1, Required == 1 & SiteLevelFullScores == 1)$NumericalScore,
                                                  TotalReqnodups = dplyr::filter(Bur_SIMSmain1, Required == 1 & SiteLevelFullScores == 1)$Green,
+                                                 TotalDeclinedReqnodups = dplyr::filter(Bur_SIMSmain1, Required == 1 & SiteLevelFullScores == 1)$ChangeinCEE_Declined,
+                                                 TotalNotReassessedReqnodups =  dplyr::filter(Bur_SIMSmain1, Required == 1 & SiteLevelFullScores == 1)$"ChangeinCEE_Not.re-assessed", 
+                                                 TotalGreenBeforeReqnodups =  dplyr::filter(Bur_SIMSmain1, Required == 1 & SiteLevelFullScores == 1)$"ChangeinCEE_No.change/no.need.for.change.from.green",
                                                  CountReqnodups = dplyr::filter(Bur_SIMSmain1, Required == 1 &  SiteLevelFullScores == 1)$X1), by=list(orgUnituid = 
                                                          dplyr::filter(Bur_SIMSmain1, Required == 1 & SiteLevelFullScores == 1)$orgUnituid), FUN = sum))
 
@@ -166,7 +243,6 @@ Bur_SIMSTreatmentandwithoutdups <- data.frame(aggregate(list(TotalScoresTrtnodup
 
 
 #Also can add one filtering treatment CEEs only
-
 Bur_SIMSmainalldata = Bur_SIMSmain1[!duplicated(Bur_SIMSmain1$orgUnituid),]
 
 #put all data frames into list
@@ -255,22 +331,50 @@ allsitesBur$SiteTrtbottododecile <- with(allsitesBur,
  
  #####Looking at the score level#####
 
- Bur_SIMSfiltered <-  dplyr::filter(Bur_SIMSmain1, SiteLevelFullScores == 1 & Assessment.FY == "2022") #put in your filter here
+ Bur_SIMSfiltered <-  dplyr::filter(Bur_SIMSmain1, SiteLevelFullScores == 1) #put in your filter here  & Assessment.FY == "2022"
  
    Bur_SIMSscoreswithoutdups <- data.frame(aggregate(list(Score.for.Green =  Bur_SIMSfiltered$Score.for.Green,
                                                          Score.for.Red =  Bur_SIMSfiltered$Score.for.Red,
                                                          Score.for.Red...Yellow =  Bur_SIMSfiltered$Score.for.Red...Yellow,
                                                          Score.for.Yellow =  Bur_SIMSfiltered$Score.for.Yellow,
+                                                         TotalDeclined = Bur_SIMSfiltered$ChangeinCEE_Declined,
+                                                         TotalImproved = Bur_SIMSfiltered$ChangeinCEE_Improved,
+                                                         TotalNotChanged = Bur_SIMSfiltered$"ChangeinCEE_No.change",
+                                                         TotalNotReassessed =  Bur_SIMSfiltered$"ChangeinCEE_Not.re-assessed", 
+                                                         TotalGreenBefore =  Bur_SIMSfiltered$"ChangeinCEE_No.change/no.need.for.change.from.green",     
                                                   Countnodups = Bur_SIMSfiltered$X1), by=list(CEE.Number.and.Name = 
                                                   Bur_SIMSfiltered$CEE.Number.and.Name, 
                                                Set.Number = Bur_SIMSfiltered$Set.Number), FUN = sum))
  
- 
     Bur_SIMSscoreswithoutdups$PercentRed <- (Bur_SIMSscoreswithoutdups$Score.for.Red / Bur_SIMSscoreswithoutdups$Countnodups)
+    Bur_SIMSscoreswithoutdups$CountReassessed <- Bur_SIMSscoreswithoutdups$Countnodups - Bur_SIMSscoreswithoutdups$TotalNotReassessed - 
+      Bur_SIMSscoreswithoutdups$TotalGreenBefore
+    Bur_SIMSscoreswithoutdups$PercentDeclined <- Bur_SIMSscoreswithoutdups$TotalDeclined / Bur_SIMSscoreswithoutdups$CountReassessed
+    Bur_SIMSscoreswithoutdups$PercentImproved <- Bur_SIMSscoreswithoutdups$TotalImproved / Bur_SIMSscoreswithoutdups$CountReassessed
+    Bur_SIMSscoreswithoutdups$PercentNotChanged <- Bur_SIMSscoreswithoutdups$TotalNotChanged / Bur_SIMSscoreswithoutdups$CountReassessed
+    Bur_SIMSscoreswithoutdups$PercentNotChangedDeclined <- Bur_SIMSscoreswithoutdups$PercentNotChanged + Bur_SIMSscoreswithoutdups$PercentDeclined 
+    
+    Bur_SIMSscoreswithoutdupstreatment <- filter(Bur_SIMSscoreswithoutdups, Bur_SIMSscoreswithoutdups$Set.Number == "2A" |
+                                                   Bur_SIMSscoreswithoutdups$Set.Number == "2B")
    
-    Bur_SIMSscoreswithoutdupstreatment <- filter(Bur_SIMSscoreswithoutdups, Bur_SIMSscoreswithoutdups$Set.Number == "2A" | Bur_SIMSscoreswithoutdups$Set.Number == "2B")
-   
-   quantile = quantile(Bur_SIMSscoreswithoutdupstreatment$PercentRed, c(0:2/2))
+    Bur_SIMSscoreswithoutdupsReassessed <- filter(Bur_SIMSscoreswithoutdups,
+                                                 Bur_SIMSscoreswithoutdups$CountReassessed >= 5) ##Filter those who have been reassessed >= x number of times. 
+    
+    quantile = quantile(Bur_SIMSscoreswithoutdupsReassessed$PercentNotChangedDeclined, c(0:5/5))
+    Bur_SIMSscoreswithoutdupsReassessed$declinedquantile <- with(Bur_SIMSscoreswithoutdupsReassessed,
+                                                                      cut(PercentNotChangedDeclined, quantile,
+                                                                          include.lowest = T,
+                                                                          labels = c("Lowest decline/no change", "Low decline/no change", 
+                                                                                     "Medium decline/no change", 
+                                                                                     "High decline/no changed",   "Highest decline/no changed")))
+    
+    View(head( Bur_SIMSscoreswithoutdupsReassessed[order(Bur_SIMSscoreswithoutdupsReassessed$declinedquantile, decreasing = TRUE),], n=5))
+    mostdecline <- head( Bur_SIMSscoreswithoutdupsReassessed[order(Bur_SIMSscoreswithoutdupsReassessed$declinedquantile, decreasing = TRUE),], n=10)
+    fwrite(mostdecline, file=paste("mostdecline", ".csv"))
+    
+    
+    
+         quantile = quantile(Bur_SIMSscoreswithoutdupstreatment$PercentRed, c(0:2/2))
    Bur_SIMSscoreswithoutdupstreatment$Bur_SIMSscoresquantile <- with(Bur_SIMSscoreswithoutdupstreatment,
                                          cut(PercentRed, quantile,
                                              include.lowest = T,
