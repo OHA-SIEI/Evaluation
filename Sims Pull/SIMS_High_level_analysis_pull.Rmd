@@ -1,0 +1,127 @@
+---
+title: <span style="font-size:125%; font-family:Sans Source">SIMS Summary params:OU_Name FY22 </span>
+author: "Ryan Carroll"
+date: "11/7/2022"
+output: 
+  pdf_document
+params: 
+  OU_Name: 
+  data: "sims_mock.csv"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+
+
+```
+
+
+```{r include=FALSE}
+
+library(readr)
+library(tidyverse)
+library(ggplot2)
+library(knitr)
+library(rmarkdown)
+library(glitr)
+
+#devtools::install_github("USAID-OHA-SI/glitr")
+#tinytex::install_tinytex()
+
+sims_all <- read_csv("C:/Users/rcarroll/Desktop/Git/Evaluation/Sims Pull/SIMS_Pull.csv")
+
+
+
+sims_mock <- sims_all %>%
+  rename(OU_Name = `OU Name`) %>%
+  filter(OU_Name == "Burundi" ) %>%
+  filter(`Assessment FY` == "2022")
+
+```
+```{r include=FALSE}
+# All Necesary calcs for report below
+
+count_assessments <- sims_mock %>%
+  #filter(OU_Name == params$OU_Name) %>%
+  distinct(`Assessment ID`) %>%
+  nrow()
+
+
+count_followups <- sims_mock %>%
+  #filter(OU_Name == params$OU_Name) %>%
+  filter(`Follow Up Status` == "Completed") %>%
+    distinct(`Assessment ID`) %>%
+  nrow()
+
+count_missed_followups <- sims_mock %>%
+ # filter(OU_Name == params$OU_Name) %>%
+filter(`Follow Up Status` == "Missed") %>%
+    distinct(`Assessment ID`) %>%
+  nrow()
+```
+
+# SIMS Summary for `r params$OU_Name`
+
+## This report summarizes key findings from the last FY of completed SIMS assessments. In FY22, `r count_assessments` assessments were completed in `r params$OU_Name`.
+
+#	In total, `r count_followups` follow-up assessments have been reported (while `r count_missed_followups` assessments have been missed). 
+
+#- Flag for discussion with the OU cluster team: What are your plans for follow-up assessments and for assessing program quality in the coming COP cycle, given that many follow-up assessments have been missed?
+
+
+
+```{r}
+
+ # r <- sims_mock %>%
+ #  filter(OU_Name == params$OU_Name) %>%
+ #  distinct(OU_Name)
+
+#knitr::kable(r)
+
+
+ 
+# for (i in unique(sims_mock$OU_Name)) {
+#   
+#   
+#   knitr::kable(r)
+# 
+# }
+
+
+
+
+#kable(r)
+
+
+
+```
+
+```{r}
+
+
+
+
+# b <- sims_mock %>%
+   #filter(OU_Name == params$OU_Name) %>%
+    b <- print(ggplot(sims_mock, aes(x = `Score for Green`, y = `Score for Red`))+
+    geom_jitter())
+#   
+  # scale_color_si("denim") +
+  # si_style()
+
+
+# for (i in unique(sims_mock$OU_Name)) {
+# 
+# 
+# c <-  print(ggplot(sims_mock, aes(x = `Score for Green`, y = `Score for Red`))+
+#    geom_count())
+# 
+#   
+# 
+# 
+# }
+
+plot(b)
+```
