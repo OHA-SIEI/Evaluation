@@ -5,16 +5,12 @@ date: "11/7/2022"
 output: 
   pdf_document
 params: 
-  OU_Name: 
+  OU_Name: OU_Name
   data: "sims_mock.csv"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-
-
-
-
 ```
 
 
@@ -36,7 +32,7 @@ sims_all <- read_csv("C:/Users/rcarroll/Desktop/Git/Evaluation/Sims Pull/SIMS_Pu
 
 sims_mock <- sims_all %>%
   rename(OU_Name = `OU Name`) %>%
-  filter(OU_Name == "Burundi" ) %>%
+  filter(OU_Name == "Burundi" | OU_Name == "Namibia") %>%
   filter(`Assessment FY` == "2022")
 
 ```
@@ -44,19 +40,19 @@ sims_mock <- sims_all %>%
 # All Necesary calcs for report below
 
 count_assessments <- sims_mock %>%
-  #filter(OU_Name == params$OU_Name) %>%
+  filter(OU_Name == params$OU_Name) %>%
   distinct(`Assessment ID`) %>%
   nrow()
 
 
 count_followups <- sims_mock %>%
-  #filter(OU_Name == params$OU_Name) %>%
+  filter(OU_Name == params$OU_Name) %>%
   filter(`Follow Up Status` == "Completed") %>%
     distinct(`Assessment ID`) %>%
   nrow()
 
 count_missed_followups <- sims_mock %>%
- # filter(OU_Name == params$OU_Name) %>%
+  filter(OU_Name == params$OU_Name) %>%
 filter(`Follow Up Status` == "Missed") %>%
     distinct(`Assessment ID`) %>%
   nrow()
