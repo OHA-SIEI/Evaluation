@@ -347,6 +347,10 @@ allsitesBur$SiteTrtbottododecile <- with(allsitesBur,
                                                Set.Number = Bur_SIMSfiltered$Set.Number), FUN = sum))
  
     Bur_SIMSscoreswithoutdups$PercentRed <- (Bur_SIMSscoreswithoutdups$Score.for.Red / Bur_SIMSscoreswithoutdups$Countnodups)
+    Bur_SIMSscoreswithoutdups$PercentYellow <- (Bur_SIMSscoreswithoutdups$Score.for.Yellow / Bur_SIMSscoreswithoutdups$Countnodups)
+    Bur_SIMSscoreswithoutdups$PercentGreen <- (Bur_SIMSscoreswithoutdups$Score.for.Green / Bur_SIMSscoreswithoutdups$Countnodups)
+    Bur_SIMSscoreswithoutdups$PercentRedYellow <- (Bur_SIMSscoreswithoutdups$Score.for.Red...Yellow / Bur_SIMSscoreswithoutdups$Countnodups)
+    
     Bur_SIMSscoreswithoutdups$CountReassessed <- Bur_SIMSscoreswithoutdups$Countnodups - Bur_SIMSscoreswithoutdups$TotalNotReassessed - 
       Bur_SIMSscoreswithoutdups$TotalGreenBefore
     Bur_SIMSscoreswithoutdups$PercentDeclined <- Bur_SIMSscoreswithoutdups$TotalDeclined / Bur_SIMSscoreswithoutdups$CountReassessed
