@@ -24,14 +24,19 @@ for (i in 1:length(files)){
   temp_df =  bind_rows(temp_df, currentFile)    
 } 
 
-OUName <- "Lesotho" ###Put your OU name here
+OUName <- "Nigeria" ###Put your OU name here
 SiteOnly <- 1 #1 if we want to focus on Site data, not above-site data, 0 if we keep both
 
 SIMSdatain <- temp_df
 colnames(SIMSdatain)[grepl("DATIM.Location.UID", colnames(SIMSdatain))] <- "orgUnituid" #"LOWEST_OU_UID"  --> question-level data uses _ instead of .
 SIMSdatain$X1 <- 1
 SIMSdatain$SNU1.Name[SIMSdatain$SNU1.Name == "Tajikistan (ZtoVYbNCnsj)"]<- "Tajikistan"
-
+SIMSdatain$SNU1.Name[SIMSdatain$SNU1.Name == "Phnom Penh"]<- "Phnom Penh"
+SIMSdatain$SNU1.Name[SIMSdatain$SNU1.Name == "Phnom Penh"]<- "Cambodia"
+SIMSdatain$SNU1.Name[SIMSdatain$SNU1.Name == "Central Asia Region"]<- "Kazakhstan" ###I think this is correct, but there are no indications that I can see, except for the team lead being Khorlan Izmailova; when I google her, she seems to be from Kazakstan
+SIMSdatain$OU.Name[SIMSdatain$OU.Name == "Asia Regional Program"] <- "Asia Region"
+SIMSdatain$OU.Name[SIMSdatain$OU.Name == "Central Asia Region"] <- "Asia Region"
+SIMSdatain$OU.Name[SIMSdatain$OU.Name == "Cambodia"] <- "Asia Region"
 SIMSdata <- SIMSdatain #I used to merge in Genie data here, but I don't think I can do it here
 #SIMSdata$Date <- substr(SIMSdata$ASSESSMENT_DATE, 1, 9)
 SIMSdata$DateAssessment <- as.Date(SIMSdata$Assessment.Date, format= "%m/%d/20%y")
@@ -39,18 +44,31 @@ SIMSdata$DateAssessment <- as.Date(SIMSdata$Assessment.Date, format= "%m/%d/20%y
 SIMSdata$AssessmentFY <- substr(SIMSdata$Assessment.Quarter, 1, 4)
 
 SIMSdata_filtered <- filter(SIMSdata, OU.Name == OUName)
-SIMSdata_filtered2 <- SIMSdata_filtered %>% filter(if(SiteOnly==1) Tool.Type == "Site" else TRUE)
+
+SIMSdata_filtered$Follow.Up.Date.Deadline2 <- as.Date(SIMSdata_filtered$Follow.Up.Date.Deadline, "%m/%d/20%y")
+
+SIMSdata_filtered <- SIMSdata_filtered %>%  mutate(FY22followup = ifelse(SIMSdata_filtered$Follow.Up.Date.Deadline2 >=
+                            as.Date("2021-10-01") &  SIMSdata_filtered$Follow.Up.Date.Deadline2 <= as.Date("2022-09-30"), 1, 0)) #I'm checking to see if there is any clean/easy way to get completed/missed/upcoming####
+
+SIMSdata_filtered$Assessment.Date2 <- as.Date(SIMSdata_filtered$Assessment.Date, "%m/%d/20%y")
+
+n22<-as.integer(length(unique(filter(SIMSdata_filtered, SIMSdata_filtered$Assessment.FY == 2022)$Assessment.ID)) )
+paste("This report summarizes key findings from the last FY of completed SIMS assessments. In FY22,",n22, "assessments were completed in the OU")
+
+SIMSdata_filtered2 <- SIMSdata_filtered %>% filter(if(SiteOnly==1) Tool.Type == "Site" else TRUE) ##Filtering to Site Only
   #{if (SiteOnly==1) filter(., Tool.Type == "Site") else TRUE} 
 
+#get # assessments completed in FY22, including #follow-up assessments, and # assessments missed
+
 ##This was the first date these sites were visited. 
-SIMSdata_visits  <- SIMSdata_filtered %>% select("SNU1.Name", "orgUnituid", "Assessment.ID", "DateAssessment") %>% distinct
+SIMSdata_visits  <- SIMSdata_filtered2 %>% select("SNU1.Name", "orgUnituid", "Assessment.ID", "DateAssessment") %>% distinct
 SIMSdata_visits <- SIMSdata_visits %>%
   group_by(SNU1.Name, orgUnituid) %>%
   mutate(Ordervisit = order(order(Assessment.ID, decreasing=FALSE))) %>%
   mutate(Ordervisitlast = order(order(Assessment.ID, decreasing=TRUE)))
 
 SIMSdata_visits = subset(SIMSdata_visits, select = -c(DateAssessment))
-SIMSdata_1 <- merge(x=SIMSdata_filtered, y=SIMSdata_visits, by=c("SNU1.Name", "orgUnituid", "Assessment.ID"), all.x=TRUE)
+SIMSdata_1 <- merge(x=SIMSdata_filtered2, y=SIMSdata_visits, by=c("SNU1.Name", "orgUnituid", "Assessment.ID"), all.x=TRUE)
 
 ##This was the first date these sites were visited. 
 SIMSdata_1$AssessmentStatus[SIMSdata_1$Ordervisit == 1] <- "Initial Assessment" 
