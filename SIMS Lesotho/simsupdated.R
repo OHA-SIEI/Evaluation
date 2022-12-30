@@ -33,12 +33,35 @@ SIMSdatain$X1 <- 1
 SIMSdatain$SNU1.Name[SIMSdatain$SNU1.Name == "Tajikistan (ZtoVYbNCnsj)"]<- "Tajikistan"
 SIMSdatain$SNU1.Name[SIMSdatain$SNU1.Name == "Phnom Penh"]<- "Phnom Penh"
 SIMSdatain$SNU1.Name[SIMSdatain$SNU1.Name == "Phnom Penh"]<- "Cambodia"
-SIMSdatain$SNU1.Name[SIMSdatain$SNU1.Name == "Central Asia Region"]<- "Kazakhstan" ###I think this is correct, but there are no indications that I can see, except for the team lead being Khorlan Izmailova; when I google her, she seems to be from Kazakstan
+SIMSdatain$SNU1.Name[SIMSdatain$SNU1.Name == "Central Asia Region"]<- "Kazakhstan" ###I think this is correct, but there are no clues to the OU that I can see, except for the team lead being Khorlan Izmailova; when I google her, she seems to be from Kazakstan
 SIMSdatain$OU.Name[SIMSdatain$OU.Name == "Asia Regional Program"] <- "Asia Region"
 SIMSdatain$OU.Name[SIMSdatain$OU.Name == "Central Asia Region"] <- "Asia Region"
 SIMSdatain$OU.Name[SIMSdatain$OU.Name == "Cambodia"] <- "Asia Region"
+
+SIMSdatain$Prime.Partner[SIMSdatain$Prime.Partner == "Abt Associates Inc."] <- "Abt Associates, Inc."
+SIMSdatain$Prime.Partner[SIMSdatain$Prime.Partner == "AFRICAN EVANGELISTIC ENTERPRI SE"] <- "African Evangelistic Enterprise"
+SIMSdatain$Prime.Partner[SIMSdatain$Prime.Partner == "Chemonics International"] <- "Chemonics International, Inc."
+SIMSdatain$Prime.Partner[SIMSdatain$Prime.Partner == "DELOITTE CONSULTING LIMITED"] <- "Deloitte Consulting Limited"
+SIMSdatain$Prime.Partner[SIMSdatain$Prime.Partner == "Education Development Center"] <- "Education Development Center, Inc."
+SIMSdatain$Prime.Partner[SIMSdatain$Prime.Partner == "Elizabeth Glaser Pediatric Aids Foundation"] <- "Elizabeth Glaser Pediatric AIDS Foundation"
+SIMSdatain$Prime.Partner[SIMSdatain$Prime.Partner == "HEALTH INITIATIVES FOR SAFETY AND STABILITY IN AFRICA"] <- "Health Initiatives for Safety and Stability in Africa"
+SIMSdatain$Prime.Partner[SIMSdatain$Prime.Partner == "INTRAHEALTH INTERNATIONAL, INC."] <- "IntraHealth International, Inc"
+SIMSdatain$Prime.Partner[SIMSdatain$Prime.Partner == "JHPIEGO"] <- "JHPIEGO CORPORATION"
+SIMSdatain$Prime.Partner[SIMSdatain$Prime.Partner == "John Snow Inc (JSI)"] <- "John Snow, Inc."
+SIMSdatain$Prime.Partner[SIMSdatain$Prime.Partner == "John Snow, Incorporated"] <- "John Snow, Inc."
+SIMSdatain$Prime.Partner[SIMSdatain$Prime.Partner == "Moi Teaching and Referral Hospital"] <- "MOI TEACHING AND REFERRAL HOSPITAL"
+SIMSdatain$Prime.Partner[SIMSdatain$Prime.Partner == "NACOSA (Networking AIDS Community of South Africa)"] <- "NACOSA"
+SIMSdatain$Prime.Partner[SIMSdatain$Prime.Partner == "Partners in Hope"] <- "Partners In Hope"
+SIMSdatain$Prime.Partner[SIMSdatain$Prime.Partner == "Project Hope Namibia"] <- "PROJECT HOPE NAMIBIA"
+SIMSdatain$Prime.Partner[SIMSdatain$Prime.Partner == "Save The Children Federation Inc"] <- "Save The Children Federation, Inc."
+SIMSdatain$Prime.Partner[SIMSdatain$Prime.Partner == "TONATA PLHIV NETWORK"] <- "TONATA PLHIV Network"
+SIMSdatain$Prime.Partner[SIMSdatain$Prime.Partner == "University Research Corporation, LLC"] <- "University Research Co., LLC"
+SIMSdatain$Prime.Partner[SIMSdatain$Prime.Partner == "Family Health International"] <- "FHI 360"
+SIMSdatain$Prime.Partner[SIMSdatain$Prime.Partner == "Heartland Alliance for Human Needs and Human Rights"] <- "HEARTLAND ALLIANCE LTD-GTE"
+
 SIMSdata <- SIMSdatain #I used to merge in Genie data here, but I don't think I can do it here
 #SIMSdata$Date <- substr(SIMSdata$ASSESSMENT_DATE, 1, 9)
+
 SIMSdata$DateAssessment <- as.Date(SIMSdata$Assessment.Date, format= "%m/%d/20%y")
 #SIMSdata$ASSESSMENT_YEAR <- substr(SIMSdata$ASSESSMENT_QUARTER, 1, 4)
 SIMSdata$AssessmentFY <- substr(SIMSdata$Assessment.Quarter, 1, 4)
@@ -52,11 +75,15 @@ SIMSdata_filtered <- SIMSdata_filtered %>%  mutate(FY22followup = ifelse(SIMSdat
 
 SIMSdata_filtered$Assessment.Date2 <- as.Date(SIMSdata_filtered$Assessment.Date, "%m/%d/20%y")
 
-n22<-as.integer(length(unique(filter(SIMSdata_filtered, SIMSdata_filtered$Assessment.FY == 2022)$Assessment.ID)) )
-paste("This report summarizes key findings from the last FY of completed SIMS assessments. In FY22,",n22, "assessments were completed in the OU")
-
 SIMSdata_filtered2 <- SIMSdata_filtered %>% filter(if(SiteOnly==1) Tool.Type == "Site" else TRUE) ##Filtering to Site Only
   #{if (SiteOnly==1) filter(., Tool.Type == "Site") else TRUE} 
+
+paste("SIMS Summary:", OUName, "FY22")
+
+comp_n22<-as.integer(length(unique(filter(SIMSdata_filtered2, SIMSdata_filtered2$Assessment.FY == 2022 & SIMSdata_filtered2$Assessment.Type == "Comprehensive")$Assessment.ID)) )
+FU_n22<-as.integer(length(unique(filter(SIMSdata_filtered2, SIMSdata_filtered2$Assessment.FY == 2022 & SIMSdata_filtered2$Assessment.Type == "Follow Up")$Assessment.ID)) )
+paste("This report summarizes key findings from the last FY of completed (Site) SIMS assessments. In FY22,",comp_n22, 
+      "comprehensive, and",FU_n22, "follow-up, assessments were completed in the OU.")
 
 #get # assessments completed in FY22, including #follow-up assessments, and # assessments missed
 
@@ -264,25 +291,53 @@ fwrite(exportsites, file=paste("sitedata", ".csv"))
 
 #####Looking at scores at the SNU-level#####
 
+SIMSdatafiltered <-  dplyr::filter(SIMSdatamain1, SiteLevelFullScores == 1) #put in your filter here  & Assessment.FY == "2022"
+
+
 SIMSdataSNUall <- data.frame(aggregate(list(TotalScores =  SIMSdatamain1$NumericalScore,
                                             Total = SIMSdatamain1$Green, Count = SIMSdatamain1$X1), by=list(SNU1.Name = SIMSdatamain1$SNU1.Name), FUN = sum))
 
-SIMSdataSNUwithoutdups <- data.frame(aggregate(list(TotalScoresnodups =  dplyr::filter(SIMSdatamain1, SiteLevelFullScores == 1)$NumericalScore,
-                                                    Totalnodups = dplyr::filter(SIMSdatamain1, SiteLevelFullScores == 1)$Green, 
-                                                    Countnodups = dplyr::filter(SIMSdatamain1, SiteLevelFullScores == 1)$X1), by=list(SNU1.Name = 
-                                                                                                                                        dplyr::filter(SIMSdatamain1, SiteLevelFullScores == 1)$SNU1.Name), FUN = sum))
+SIMSdataSNUwithoutdups <- data.frame(aggregate(list(TotalScoresnodups =  SIMSdatafiltered$NumericalScore,
+                                                    Totalnodups = SIMSdatafiltered$Green, Score.for.Greennodups =  SIMSdatafiltered$Score.for.Green,
+                                                    Score.for.Rednodups =  SIMSdatafiltered$Score.for.Red,
+                                                    Score.for.Red...Yellownodups =  SIMSdatafiltered$Score.for.Red...Yellow,
+                                                    Score.for.Yellownodups =  SIMSdatafiltered$Score.for.Yellow,
+                                                    TotalDeclinednodups = SIMSdatafiltered$ChangeinCEE_Declined,
+                                                    TotalImprovednodups = SIMSdatafiltered$ChangeinCEE_Improved,
+                                                    TotalNotChangednodups = SIMSdatafiltered$"ChangeinCEE_No.change",
+                                                    TotalNotReassessednodups =  SIMSdatafiltered$"ChangeinCEE_Not.re-assessed", 
+                                                    TotalGreenBeforenodups =  SIMSdatafiltered$"ChangeinCEE_No.change/no.need.for.change.from.green", 
+                                                    Countnodups = SIMSdatafiltered$X1), by=list(SNU1.Name =  SIMSdatafiltered$SNU1.Name), FUN = sum))
 
 
-SIMSdataSNURequiredandwithoutdups <- data.frame(aggregate(list(TotalScoresReqnodups =  dplyr::filter(SIMSdatamain1, Required == 1 & SiteLevelFullScores == 1)$NumericalScore,
-                                                               TotalReqnodups = dplyr::filter(SIMSdatamain1, Required == 1 & SiteLevelFullScores == 1)$Green,
-                                                               CountReqnodups = dplyr::filter(SIMSdatamain1, Required == 1 &  SiteLevelFullScores == 1)$X1), by=list(SNU1.Name = 
-                                                                                                                                                                       dplyr::filter(SIMSdatamain1, Required == 1 & SiteLevelFullScores == 1)$SNU1.Name), FUN = sum))
+SIMSdataSNURequiredandwithoutdups <- data.frame(aggregate(list(TotalScoresReqnodups =  dplyr::filter(SIMSdatafiltered, Required == 1 )$NumericalScore,
+                                                               TotalReqnodups = dplyr::filter(SIMSdatafiltered, Required == 1)$Green,
+                                                               Score.for.GreenReqnodups =  dplyr::filter(SIMSdatafiltered, Required == 1)$Score.for.Green,
+                                                               Score.for.RedReqnodups =  dplyr::filter(SIMSdatafiltered, Required == 1)$Score.for.Red,
+                                                               Score.for.Red...YellowReqnodups =  dplyr::filter(SIMSdatafiltered, Required == 1)$Score.for.Red...Yellow,
+                                                               Score.for.YellowReqnodups =  dplyr::filter(SIMSdatafiltered, Required == 1)$Score.for.Yellow,
+                                                               TotalDeclinedReqnodups = dplyr::filter(SIMSdatafiltered, Required == 1)$ChangeinCEE_Declined,
+                                                               TotalImprovedReqnodups = dplyr::filter(SIMSdatafiltered, Required == 1)$ChangeinCEE_Improved,
+                                                               TotalNotChangedReqnodups = dplyr::filter(SIMSdatafiltered, Required == 1)$"ChangeinCEE_No.change",
+                                                               TotalNotReassessedReqnodups =  dplyr::filter(SIMSdatafiltered, Required == 1)$"ChangeinCEE_Not.re-assessed", 
+                                                               TotalGreenBeforeReqnodups =  dplyr::filter(SIMSdatafiltered, Required == 1)$"ChangeinCEE_No.change/no.need.for.change.from.green", 
+                                                               CountReqnodups = dplyr::filter(SIMSdatafiltered, Required == 1)$X1), by=list(SNU1.Name = 
+                                                                dplyr::filter(SIMSdatafiltered, Required == 1 )$SNU1.Name), FUN = sum))
 
 
-SIMSdataSNUTreatmentandwithoutdups <- data.frame(aggregate(list(TotalScoresTrtnodups =  dplyr::filter(SIMSdatamain1, TreatmentCEEs == 1 & SiteLevelFullScores == 1)$NumericalScore,
-                                                                TotalTrtnodups = dplyr::filter(SIMSdatamain1,  TreatmentCEEs == 1 & SiteLevelFullScores == 1)$Green,
-                                                                CountTrtnodups = dplyr::filter(SIMSdatamain1,  TreatmentCEEs == 1  &  SiteLevelFullScores == 1)$X1), by=list(SNU1.Name = 
-                                                                                                                                                                               dplyr::filter(SIMSdatamain1,  TreatmentCEEs == 1  & SiteLevelFullScores == 1)$SNU1.Name), FUN = sum))
+SIMSdataSNUTreatmentandwithoutdups <- data.frame(aggregate(list(TotalScoresTrtnodups =  dplyr::filter(SIMSdatafiltered, TreatmentCEEs == 1 )$NumericalScore,
+                                                                TotalTrtnodups = dplyr::filter(SIMSdatafiltered,  TreatmentCEEs == 1)$Green,
+                                                                Score.for.GreenTrtnodups =  dplyr::filter(SIMSdatafiltered, TreatmentCEEs == 1)$Score.for.Green,
+                                                                Score.for.RedTrtnodups =  dplyr::filter(SIMSdatafiltered, TreatmentCEEs == 1)$Score.for.Red,
+                                                                Score.for.Red...YellowTrtnodups =  dplyr::filter(SIMSdatafiltered, TreatmentCEEs == 1)$Score.for.Red...Yellow,
+                                                                Score.for.YellowTrtnodups =  dplyr::filter(SIMSdatafiltered, TreatmentCEEs == 1)$Score.for.Yellow,
+                                                                TotalDeclinedTrtnodups = dplyr::filter(SIMSdatafiltered, TreatmentCEEs == 1)$ChangeinCEE_Declined,
+                                                                TotalImprovedTrtnodups = dplyr::filter(SIMSdatafiltered, TreatmentCEEs == 1)$ChangeinCEE_Improved,
+                                                                TotalNotChangedTrtnodups = dplyr::filter(SIMSdatafiltered, TreatmentCEEs == 1)$"ChangeinCEE_No.change",
+                                                                TotalNotReassessedTrtnodups =  dplyr::filter(SIMSdatafiltered,  TreatmentCEEs == 1)$"ChangeinCEE_Not.re-assessed", 
+                                                                TotalGreenBeforeTrtnodups =  dplyr::filter(SIMSdatafiltered,  TreatmentCEEs == 1)$"ChangeinCEE_No.change/no.need.for.change.from.green", 
+                                                                CountTrtnodups = dplyr::filter(SIMSdatafiltered,  TreatmentCEEs == 1)$X1), by=list(SNU1.Name = 
+                                                                dplyr::filter(SIMSdatafiltered,  TreatmentCEEs == 1)$SNU1.Name), FUN = sum))
 
 #Also can add one filtering treatment CEEs only
 
@@ -298,7 +353,6 @@ allsitesSNU_$SiteLevelScorenTrtnodup <- (allsitesSNU_$TotalScoresTrtnodups / all
 
 #####Looking at the score level#####
 
-SIMSdatafiltered <-  dplyr::filter(SIMSdatamain1, SiteLevelFullScores == 1) #put in your filter here  & Assessment.FY == "2022"
 
 SIMSdatascoreswithoutdups <- data.frame(aggregate(list(Score.for.Green =  SIMSdatafiltered$Score.for.Green,
                                                        Score.for.Red =  SIMSdatafiltered$Score.for.Red,
@@ -351,6 +405,9 @@ SIMSdatascoreswithoutdupsReassessed <- filter(SIMSdatascoreswithoutdups,
 SIMSdatascoreswithoutdupsmin <- filter(SIMSdatascoreswithoutdups,
                                        SIMSdatascoreswithoutdups$Countnodups >= 5) ##Filter those who have been assessed >= x number of times. 
 
+SIMSdatascoreswithoutdupsmin2 <- filter(SIMSdatascoreswithoutdups,
+                                       SIMSdatascoreswithoutdups$Countnodups >= 10) ##Filter those who have been assessed >= x number of times. 
+
 
 View(head( SIMSdatascoreswithoutdupsReassessed[order(SIMSdatascoreswithoutdupsReassessed$declinedquantile, decreasing = TRUE),], n=5))
 mostdecline <- head( SIMSdatascoreswithoutdupsReassessed[order(SIMSdatascoreswithoutdupsReassessed$PercentNotChangedDeclined, decreasing = TRUE),], n=10)
@@ -360,14 +417,47 @@ fwrite(mostdecline, file=paste("mostdecline", ".csv"))
 View(head( SIMSdatascoreswithoutdupstreatment[order(SIMSdatascoreswithoutdupstreatment$PercentRed, decreasing = TRUE),], n=5))
 
 View(head( SIMSdatascoreswithoutdups[order(SIMSdatascoreswithoutdups$PercentRed, decreasing = TRUE),], n=10))
-mostegregious <-   head( SIMSdatascoreswithoutdupsmin[order(SIMSdatascoreswithoutdupsmin$PercentRed, decreasing = TRUE),], n=10)
+mostegregious <-   head( SIMSdatascoreswithoutdupsmin[(order(SIMSdatascoreswithoutdupsmin$PercentRed,
+                 SIMSdatascoreswithoutdupsmin$Countnodups, decreasing = TRUE)),], n=10)
+
+bestscoring <-   head(SIMSdatascoreswithoutdupsmin2[(order(SIMSdatascoreswithoutdupsmin2$PercentGreen, 
+                  SIMSdatascoreswithoutdupsmin2$Countnodups, decreasing = TRUE)),], n=10)
+
+mostdecline <-   head( SIMSdatascoreswithoutdupsmin2[(order(SIMSdatascoreswithoutdupsmin2$PercentNotChangedDeclined,
+                                                             SIMSdatascoreswithoutdupsmin2$Countnodups, decreasing = TRUE)),], n=10)
 
 fwrite(mostegregious, file=paste("mostegregious", ".csv"))
+fwrite(bestscoring, file=paste("bestscoring", ".csv"))
+fwrite(mostdecline, file=paste("mostdecline", ".csv"))
+
 
 mostegregioustograph <- mostegregious %>% select(c("CEE.Number.and.Name", "PercentYellow", "PercentRed", "PercentGreen")) %>% 
   rename(Red = "PercentRed", Yellow = "PercentYellow", Green = "PercentGreen")
 
+bestscoringgraph <- bestscoring %>% select(c("CEE.Number.and.Name", "PercentYellow", "PercentRed", "PercentGreen")) %>% 
+  rename(Red = "PercentRed", Yellow = "PercentYellow", Green = "PercentGreen")
+
+mostdeclinegraph <- mostdecline %>% select(c("CEE.Number.and.Name", "PercentYellow", "PercentRed", "PercentGreen")) %>% 
+  rename(Red = "PercentRed", Yellow = "PercentYellow", Green = "PercentGreen")
+
 mostegregioustographlong <- pivot_longer(mostegregioustograph, !CEE.Number.and.Name, names_to = "Scores", values_to = "Percent.Breakdown")
+
+bestscoringtographlong <- pivot_longer(bestscoringgraph, !CEE.Number.and.Name, names_to = "Scores", values_to = "Percent.Breakdown")
+
+mostdeclinetographlong <- pivot_longer(mostdeclinegraph, !CEE.Number.and.Name, names_to = "Scores", values_to = "Percent.Breakdown")
+
+
+#Bottom CEE Scores in the OU
+
+print("The overall bottom 5 CEEs in the OU (with scores which were later re-scored at the same facilities removed, and only keeping CEEs which were assessed by ten or more sites) include:")
+paste("1.", mostegregioustograph[1,1], "(scored in", mostegregious[1,12],"sites)")
+paste("2.", mostegregioustograph[2,1], "(scored in", mostegregious[2,12],"sites)")
+paste("3.", mostegregioustograph[3,1], "(scored in", mostegregious[3,12],"sites)")
+paste("4.", mostegregioustograph[4,1], "(scored in", mostegregious[4,12],"sites)")
+paste("5.", mostegregioustograph[5,1], "(scored in", mostegregious[5,12],"sites)")
+
+print("Flag for discussion with the OU cluster team:") 
+print("What are some of the plans you have for addressing some of these poorer-performing CEEs at the site and above-site level?")
 
 #mostegregioustographlong$Scores <- relevel(mostegregioustographlong$Scores, 'Red')
 worst <- mostegregioustographlong %>% ggplot(aes(x=CEE.Number.and.Name, y = Percent.Breakdown, fill=
@@ -378,6 +468,208 @@ worst <- mostegregioustographlong %>% ggplot(aes(x=CEE.Number.and.Name, y = Perc
   scale_fill_manual(values = c("green",  "yellow", "red"))
 
 worst + theme(legend.position = "none")
+
+print(" What are some of the plans you have for addressing some of these poorer-performing CEEs?")
+#Top CEE Scores in the OU
+
+print("The overall top 5 CEEs in the OU (with scores which were later re-scored at the same facilities removed, and only keeping CEEs which were assessed by ten or more sites) are (in decreasing order of number of sites in which the CEEs were assessed):")
+paste("1.", bestscoringgraph[1,1], "(scored in", bestscoring[1,12],"sites)")
+paste("2.", bestscoringgraph[2,1], "(scored in", bestscoring[2,12],"sites)")
+paste("3.", bestscoringgraph[3,1], "(scored in", bestscoring[3,12],"sites)")
+paste("4.", bestscoringgraph[4,1], "(scored in", bestscoring[4,12],"sites)")
+paste("5.", bestscoringgraph[5,1], "(scored in", bestscoring[5,12],"sites)")
+
+best <- bestscoringtographlong %>% ggplot(aes(x=CEE.Number.and.Name, y = Percent.Breakdown, fill=
+                                                   factor(Scores, levels=c("Green", "Yellow", "Red")))) +
+  geom_bar(position = "fill", stat = "identity")+
+  ggtitle("Best performing CEE scores")+xlab('CEE Number and Name')+ylab('Score breakdown') +
+  theme(plot.title = element_text(hjust = 0.5)) + coord_flip() +  
+  scale_fill_manual(values = c("green",  "yellow", "red"))
+
+best + theme(legend.position = "none")
+
+print("Flag for discussion with the OU cluster team: Do you find that the MER indicators in your OU that are linked to these strong-performing CEEs are equally strong?")
+
+#CEEs which have declined or remained the same
+
+#Bottom CEE Scores in the OU
+print("The CEEs which have declined or remained the same in the OU (with scores which were later re-scored at the same facilities removed, and only keeping CEEs which were assessed by ten or more sites) include:")
+paste("1.", mostdeclinegraph[1,1], "(scored in", mostdecline[1,12],"sites;", mostdecline[1,18]*100,"% declined.")
+paste("2.", mostdeclinegraph[2,1], "(scored in", mostdecline[2,12],"sites;", mostdecline[2,18]*100,"% declined.")
+paste("3.", mostdeclinegraph[3,1], "(scored in", mostdecline[3,12],"sites;", mostdecline[3,18]*100,"% declined.")
+paste("4.", mostdeclinegraph[4,1], "(scored in", mostdecline[4,12],"sites;", mostdecline[4,18]*100,"% declined.")
+paste("5.", mostdeclinegraph[5,1], "(scored in", mostdecline[5,12],"sites;", mostdecline[5,18]*100,"% declined.")
+
+decline <- mostdeclinetographlong %>% ggplot(aes(x=CEE.Number.and.Name, y = Percent.Breakdown, fill=
+                                                factor(Scores, levels=c("Green", "Yellow", "Red")))) +
+  geom_bar(position = "fill", stat = "identity")+
+  ggtitle("CEE scores which declined or remained the same")+xlab('CEE Number and Name')+ylab('Score breakdown') +
+  theme(plot.title = element_text(hjust = 0.5)) + coord_flip() +  
+  scale_fill_manual(values = c("green",  "yellow", "red"))
+
+decline + theme(legend.position = "none")
+
+print("Flag for discussion with the OU cluster team: Some of these CEEs have not been re-assessed or have not shown improvement. Are there ways to support their improvement or to monitor whether or not improvement has occurred?")
+
+#SNU-level scores
+
+SIMSdataSNUwithoutdups$PercentGreen <- (SIMSdataSNUwithoutdups$Score.for.Greennodups / SIMSdataSNUwithoutdups$Countnodups)
+SIMSdataSNUwithoutdups$PercentYellow <- (SIMSdataSNUwithoutdups$Score.for.Yellownodups / SIMSdataSNUwithoutdups$Countnodups)
+SIMSdataSNUwithoutdups$PercentRed <- (SIMSdataSNUwithoutdups$Score.for.Rednodups / SIMSdataSNUwithoutdups$Countnodups)
+SIMSdataSNUwithoutdups$PercentRedYellow <- (SIMSdataSNUwithoutdups$Score.for.Red...Yellownodups / SIMSdataSNUwithoutdups$Countnodups)
+
+
+SIMSdataSNUwithoutdups$CountReassessed <- SIMSdataSNUwithoutdups$Countnodups - SIMSdataSNUwithoutdups$TotalNotReassessednodups - 
+  SIMSdataSNUwithoutdups$TotalGreenBeforenodups
+ SIMSdataSNUwithoutdups$PercentDeclined <- SIMSdataSNUwithoutdups$TotalDeclinednodups / SIMSdataSNUwithoutdups$CountReassessed
+SIMSdataSNUwithoutdups$PercentImproved <- SIMSdataSNUwithoutdups$TotalImprovednodups / SIMSdataSNUwithoutdups$CountReassessed
+SIMSdataSNUwithoutdups$PercentNotChanged <- SIMSdataSNUwithoutdups$TotalNotChangednodups / SIMSdataSNUwithoutdups$CountReassessed
+SIMSdataSNUwithoutdups$PercentNotChangedDeclined <- SIMSdataSNUwithoutdups$PercentNotChanged + SIMSdataSNUwithoutdups$PercentDeclined
+
+SIMSdataSNUwithoutdupsmin <- filter(SIMSdataSNUwithoutdups,
+                                    SIMSdataSNUwithoutdups$Countnodups >= 5) ##Filter those who have been assessed >= x number of times. 
+
+SIMSdataSNUwithoutdupsmin2 <- filter(SIMSdataSNUwithoutdups,
+                                     SIMSdataSNUwithoutdups$Countnodups >= 10) ##Filter those who have been assessed >= x number of times. 
+
+bestscoringSNU <-   head(SIMSdataSNUwithoutdups[(order(SIMSdataSNUwithoutdups$PercentGreen, 
+                                                           SIMSdataSNUwithoutdups$Countnodups, decreasing = TRUE)),], n=8)
+worstscoringSNU <-   head(SIMSdataSNUwithoutdups[(order(SIMSdataSNUwithoutdups$PercentRed, 
+                                                           SIMSdataSNUwithoutdups$Countnodups, decreasing = TRUE)),], n=8)
+
+bestscoringSNUgraph <- bestscoringSNU %>% select(c("SNU1.Name", "PercentYellow", "PercentRed", "PercentGreen")) %>% 
+  rename(Red = "PercentRed", Yellow = "PercentYellow", Green = "PercentGreen")
+
+worstscoringSNUgraph <- worstscoringSNU %>% select(c("SNU1.Name", "PercentYellow", "PercentRed", "PercentGreen")) %>% 
+  rename(Red = "PercentRed", Yellow = "PercentYellow", Green = "PercentGreen")
+
+bestscoringSNUtographlong <- pivot_longer(bestscoringSNUgraph, !SNU1.Name, names_to = "Scores", values_to = "Percent.Breakdown")
+
+worstscoringSNUtographlong <- pivot_longer(worstscoringSNUgraph, !SNU1.Name, names_to = "Scores", values_to = "Percent.Breakdown")
+
+
+print("Regions with large shares of green CEEs indicate that those regions are doing well and perhaps could be models of best practice for other sites.  The overall top 5 SNUs in the OU (with scores which were later re-scored at the same facilities removed) are (in decreasing order of number of CEEs assessed in the SNU):")
+paste("1.", bestscoringSNUgraph[1,1], "(", bestscoringSNU[1,13],"CEEs scored)")
+paste("2.", bestscoringSNUgraph[2,1], "(", bestscoringSNU[2,13],"CEEs scored)")
+paste("3.", bestscoringSNUgraph[3,1], "(", bestscoringSNU[3,13],"CEEs scored)")
+paste("4.", bestscoringSNUgraph[4,1], "(", bestscoringSNU[4,13],"CEEs scored)")
+paste("5.", bestscoringSNUgraph[5,1], "(", bestscoringSNU[5,13],"CEEs scored)")
+
+bestSNU <- bestscoringSNUtographlong %>% ggplot(aes(x=SNU1.Name, y = Percent.Breakdown, fill=
+                                                factor(Scores, levels=c("Green", "Yellow", "Red")))) +
+  geom_bar(position = "fill", stat = "identity")+
+  ggtitle("Best-performing SNUs")+xlab('SNUs')+ylab('Score breakdown') +
+  theme(plot.title = element_text(hjust = 0.5)) + coord_flip() +  
+  scale_fill_manual(values = c("green",  "yellow", "red"))
+
+bestSNU + theme(legend.position = "none")
+
+print("Regions with larger shares of red CEEs indicate that those regions may have more sites which need improvement and/or re-assessment.  The overall bottom 5 SNUs in the OU (with scores which were later re-scored at the same facilities removed) are (in decreasing order of number of CEEs assessed in the SNU):")
+paste("1.", worstscoringSNUgraph[1,1], "(", worstscoringSNU[1,13],"CEEs scored)")
+paste("2.", worstscoringSNUgraph[2,1], "(", worstscoringSNU[2,13],"CEEs scored)")
+paste("3.", worstscoringSNUgraph[3,1], "(", worstscoringSNU[3,13],"CEEs scored)")
+paste("4.", worstscoringSNUgraph[4,1], "(", worstscoringSNU[4,13],"CEEs scored)")
+paste("5.", worstscoringSNUgraph[5,1], "(", worstscoringSNU[5,13],"CEEs scored)")
+
+worstSNU <- worstscoringSNUtographlong %>% ggplot(aes(x=SNU1.Name, y = Percent.Breakdown, fill=
+                                                      factor(Scores, levels=c("Green", "Yellow", "Red")))) +
+  geom_bar(position = "fill", stat = "identity")+
+  ggtitle("Worst-performing SNUs")+xlab('SNUs')+ylab('Score breakdown') +
+  theme(plot.title = element_text(hjust = 0.5)) + coord_flip() +  
+  scale_fill_manual(values = c("green",  "yellow", "red"))
+
+worstSNU + theme(legend.position = "none")
+
+paste("Flag for discussion with the country cluster team:  Are there success stories that an SNU like", bestscoringSNUgraph[1,1],
+      "(which has collected a higher number of scores and which has a large proportion of green scores assessed) can share with lower-performing SNUs such as",worstscoringSNUgraph[1,1],"?")
+
+#Partner-level scores
+
+
+#####Looking at scores at the Partner-level#####
+
+SIMSdatapartnerwithoutdups <- data.frame(aggregate(list(TotalScoresnodups =  SIMSdatafiltered$NumericalScore,
+                                                    Totalnodups = SIMSdatafiltered$Green, Score.for.Greennodups =  SIMSdatafiltered$Score.for.Green,
+                                                    Score.for.Rednodups =  SIMSdatafiltered$Score.for.Red,
+                                                    Score.for.Red...Yellownodups =  SIMSdatafiltered$Score.for.Red...Yellow,
+                                                    Score.for.Yellownodups =  SIMSdatafiltered$Score.for.Yellow,
+                                                    TotalDeclinednodups = SIMSdatafiltered$ChangeinCEE_Declined,
+                                                    TotalImprovednodups = SIMSdatafiltered$ChangeinCEE_Improved,
+                                                    TotalNotChangednodups = SIMSdatafiltered$"ChangeinCEE_No.change",
+                                                    TotalNotReassessednodups =  SIMSdatafiltered$"ChangeinCEE_Not.re-assessed", 
+                                                    TotalGreenBeforenodups =  SIMSdatafiltered$"ChangeinCEE_No.change/no.need.for.change.from.green", 
+                                                    Countnodups = SIMSdatafiltered$X1), by=list(PrimePartner =  SIMSdatafiltered$Prime.Partner), FUN = sum))
+
+SIMSdatapartnerwithoutdups$PercentGreen <- (SIMSdatapartnerwithoutdups$Score.for.Greennodups / SIMSdatapartnerwithoutdups$Countnodups)
+SIMSdatapartnerwithoutdups$PercentYellow <- (SIMSdatapartnerwithoutdups$Score.for.Yellownodups / SIMSdatapartnerwithoutdups$Countnodups)
+SIMSdatapartnerwithoutdups$PercentRed <- (SIMSdatapartnerwithoutdups$Score.for.Rednodups / SIMSdatapartnerwithoutdups$Countnodups)
+SIMSdatapartnerwithoutdups$PercentRedYellow <- (SIMSdatapartnerwithoutdups$Score.for.Red...Yellownodups / SIMSdatapartnerwithoutdups$Countnodups)
+
+SIMSdatapartnerwithoutdups$CountReassessed <- SIMSdatapartnerwithoutdups$Countnodups - SIMSdatapartnerwithoutdups$TotalNotReassessednodups - 
+  SIMSdatapartnerwithoutdups$TotalGreenBeforenodups
+SIMSdatapartnerwithoutdups$PercentDeclined <- SIMSdatapartnerwithoutdups$TotalDeclinednodups / SIMSdatapartnerwithoutdups$CountReassessed
+SIMSdatapartnerwithoutdups$PercentImproved <- SIMSdatapartnerwithoutdups$TotalImprovednodups / SIMSdatapartnerwithoutdups$CountReassessed
+SIMSdatapartnerwithoutdups$PercentNotChanged <- SIMSdatapartnerwithoutdups$TotalNotChangednodups / SIMSdatapartnerwithoutdups$CountReassessed
+SIMSdatapartnerwithoutdups$PercentNotChangedDeclined <- SIMSdatapartnerwithoutdups$PercentNotChanged + SIMSdatapartnerwithoutdups$PercentDeclined
+
+SIMSdatapartnerwithoutdupsmin <- filter(SIMSdatapartnerwithoutdups,
+                                        SIMSdatapartnerwithoutdups$Countnodups >= 5) ##Filter those who have been assessed >= x number of times. 
+
+SIMSdatapartnerwithoutdupsmin2 <- filter(SIMSdatapartnerwithoutdups,
+                                         SIMSdatapartnerwithoutdups$Countnodups >= 10) ##Filter those who have been assessed >= x number of times. 
+
+bestscoringpartner <-   head(SIMSdatapartnerwithoutdups[(order(SIMSdatapartnerwithoutdups$PercentGreen, 
+                                                                  SIMSdatapartnerwithoutdups$Countnodups, decreasing = TRUE)),], n=3)
+worstscoringpartner <-   head(SIMSdatapartnerwithoutdups[(order(SIMSdatapartnerwithoutdups$PercentRed, 
+                                                                   SIMSdatapartnerwithoutdups$Countnodups, decreasing = TRUE)),], n=3)
+
+bestscoringpartnergraph <- bestscoringpartner %>% select(c("PrimePartner", "PercentYellow", "PercentRed", "PercentGreen")) %>% 
+  rename(Red = "PercentRed", Yellow = "PercentYellow", Green = "PercentGreen")
+
+worstscoringpartnergraph <- worstscoringpartner %>% select(c("PrimePartner", "PercentYellow", "PercentRed", "PercentGreen")) %>% 
+  rename(Red = "PercentRed", Yellow = "PercentYellow", Green = "PercentGreen")
+
+bestscoringpartnerographlong <- pivot_longer(bestscoringpartnergraph, !PrimePartner, names_to = "Scores", values_to = "Percent.Breakdown")
+
+worstscoringpartnertographlong <- pivot_longer(worstscoringpartnergraph, !PrimePartner, names_to = "Scores", values_to = "Percent.Breakdown")
+
+
+print("Partners with large shares of green CEEs indicate that those partners are doing well and perhaps could be models of best practice for other partners.  The overall top 3 partners in the OU (with scores which were later re-scored at the same facilities removed) are (in decreasing order of number of CEEs assessed in the partner):")
+paste("1.", bestscoringpartnergraph[1,1], "(", bestscoringpartner[1,13],"CEEs scored)")
+paste("2.", bestscoringpartnergraph[2,1], "(", bestscoringpartner[2,13],"CEEs scored)")
+paste("3.", bestscoringpartnergraph[3,1], "(", bestscoringpartner[3,13],"CEEs scored)")
+#paste("4.", bestscoringpartnergraph[4,1], "(", bestscoringpartner[4,13],"CEEs scored)")
+#paste("5.", bestscoringpartnergraph[5,1], "(", bestscoringpartner[5,13],"CEEs scored)")
+
+bestpartner <- bestscoringpartnerographlong %>% ggplot(aes(x=PrimePartner, y = Percent.Breakdown, fill=
+                                                      factor(Scores, levels=c("Green", "Yellow", "Red")))) +
+  geom_bar(position = "fill", stat = "identity")+
+  ggtitle("Best-performing partners")+xlab('Partners')+ylab('Score breakdown') +
+  theme(plot.title = element_text(hjust = 0.5)) + coord_flip() +  
+  scale_fill_manual(values = c("green",  "yellow", "red"))
+
+bestpartner + theme(legend.position = "none")
+
+print("Partners with larger shares of red CEEs indicate that those regions may have more sites which need improvement and/or re-assessment.  The overall bottom 3 partners in the OU (with scores which were later re-scored at the same facilities removed) are (in decreasing order of number of CEEs assessed in the partner):")
+paste("1.", worstscoringpartnergraph[1,1], "(", worstscoringpartner[1,13],"CEEs scored)")
+paste("2.", worstscoringpartnergraph[2,1], "(", worstscoringpartner[2,13],"CEEs scored)")
+paste("3.", worstscoringpartnergraph[3,1], "(", worstscoringpartner[3,13],"CEEs scored)")
+#paste("4.", worstscoringSNUgraph[4,1], "(", worstscoringSNU[4,13],"CEEs scored)")
+#paste("5.", worstscoringSNUgraph[5,1], "(", worstscoringSNU[5,13],"CEEs scored)")
+
+worstpartner <- worstscoringpartnertographlong %>% ggplot(aes(x=PrimePartner, y = Percent.Breakdown, fill=
+                                                        factor(Scores, levels=c("Green", "Yellow", "Red")))) +
+  geom_bar(position = "fill", stat = "identity")+
+  ggtitle("Worst-performing Partners")+xlab('SNUs')+ylab('Score breakdown') +
+  theme(plot.title = element_text(hjust = 0.5)) + coord_flip() +  
+  scale_fill_manual(values = c("green",  "yellow", "red"))
+
+worstpartner + theme(legend.position = "none")
+
+paste("Flag for discussion with the country cluster team:  Are there success stories that a partner like", bestscoringpartnergraph[1,1],
+      "(which has a large proportion of green scores assessed) can share with lower-performing partners such as",worstscoringpartnergraph[1,1],"?")
+
+
 
 
 # ggplot(mostegregioustographlong, 
