@@ -15,7 +15,8 @@ setwd(here())
   rmarkdown::render(input = "SIMS_High_level_analysis_pull_v2.Rmd",
                     #params = list(OU_Name = i),
                     params = list(OU.Name = i),
-                    output_format = "pdf_document",
+                    output_format = "word_document",
+                    #output_format = "pdf_document",
                     output_file = paste0(i, ".pdf"))
 }
 
