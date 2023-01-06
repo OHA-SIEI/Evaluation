@@ -17,6 +17,7 @@ setwd(here())
                     params = list(OU.Name = i),
                     output_format = "word_document",
                     #output_format = "pdf_document",
-                    output_file = paste0(i, ".pdf"))
+                    output_file = paste0(i, ".doc"))
+  # output_file = paste0(i, ".pdf"))
 }
 
